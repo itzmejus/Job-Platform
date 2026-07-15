@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { CompanyLogo } from "./company-logo";
 import type { Job } from "@/types/domain";
 import type { JobListSearchParams } from "@/lib/validation/schemas";
+import { formatSalary } from "@/lib/utils/format";
 
 interface JobTableProps {
   jobs: Job[];
@@ -61,7 +62,9 @@ export function JobTable({ jobs, filters, totalCount, page, pageSize }: JobTable
                   </div>
                 </TableCell>
                 <TableCell className="max-w-64">
-                  <span className="line-clamp-2 text-sm font-medium">{job.title}</span>
+                  <Link href={`/jobs/${job.id}`} className="line-clamp-2 text-sm font-medium hover:underline">
+                    {job.title}
+                  </Link>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {job.location ?? "—"}
@@ -84,16 +87,24 @@ export function JobTable({ jobs, filters, totalCount, page, pageSize }: JobTable
                   <VisaBadge visaSponsorship={job.visaSponsorship} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    nativeButton={false}
-                    render={
-                      <a href={job.jobUrl} target="_blank" rel="noopener noreferrer">
-                        Open <ExternalLink className="size-3.5" />
-                      </a>
-                    }
-                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      nativeButton={false}
+                      render={<Link href={`/jobs/${job.id}`}>View</Link>}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={
+                        <a href={job.jobUrl} target="_blank" rel="noopener noreferrer">
+                          Open <ExternalLink className="size-3.5" />
+                        </a>
+                      }
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -225,13 +236,3 @@ function PostedDate({ date }: { date: string | null }) {
   return <span title={parsed.toLocaleDateString()}>{formatDistanceToNowStrict(parsed, { addSuffix: true })}</span>;
 }
 
-function formatSalary(min: number | null, max: number | null, currency: string | null): string {
-  if (!min && !max) return "—";
-  const fmt = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency ?? "EUR",
-    maximumFractionDigits: 0,
-  });
-  if (min && max) return `${fmt.format(min)} – ${fmt.format(max)}`;
-  return fmt.format((min ?? max)!);
-}

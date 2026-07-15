@@ -1,12 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import type { Company, Job } from "@/types/domain";
+import type { Job } from "@/types/domain";
 import type { JobListSearchParams } from "@/lib/validation/schemas";
+import { mapJobRow } from "./mappers";
 
 type DbClient = SupabaseClient<Database>;
-type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
-type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
 
 export const JOBS_PAGE_SIZE = 25;
 
@@ -98,49 +97,17 @@ export async function listSourceNames(supabase: DbClient): Promise<string[]> {
   return (data ?? []).map((row) => row.name);
 }
 
+export async function getJobById(supabase: DbClient, id: string): Promise<Job | null> {
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("*, companies(id, name, logo_url, website, location, industry, created_at)")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapJobRow(data) : null;
+}
+
 function postedCutoff(window: "24h" | "7d" | "30d"): string {
   const hoursByWindow: Record<typeof window, number> = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
   return new Date(Date.now() - hoursByWindow[window] * 60 * 60 * 1000).toISOString();
-}
-
-function mapJobRow(row: JobRow & { companies: CompanyRow | null }): Job {
-  const { companies, ...job } = row;
-  return {
-    id: job.id,
-    companyId: job.company_id,
-    company: companies ? mapCompanyRow(companies) : undefined,
-    title: job.title,
-    location: job.location,
-    country: job.country,
-    workMode: job.work_mode,
-    salaryMin: job.salary_min,
-    salaryMax: job.salary_max,
-    salaryCurrency: job.salary_currency,
-    employmentType: job.employment_type,
-    experienceLevel: job.experience_level,
-    jobUrl: job.job_url,
-    datePosted: job.date_posted,
-    dateCollected: job.date_collected,
-    source: job.source,
-    sources: job.sources,
-    description: job.description,
-    skills: job.skills,
-    language: job.language,
-    visaSponsorship: job.visa_sponsorship,
-    fingerprint: job.fingerprint,
-    createdAt: job.created_at,
-    updatedAt: job.updated_at,
-  };
-}
-
-function mapCompanyRow(row: CompanyRow): Company {
-  return {
-    id: row.id,
-    name: row.name,
-    logoUrl: row.logo_url,
-    website: row.website,
-    location: row.location,
-    industry: row.industry,
-    createdAt: row.created_at,
-  };
 }

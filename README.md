@@ -41,7 +41,16 @@ up right now, not the eventual full scope.
       visa sponsorship, experience level, source, date posted) — all state
       lives in the URL, no client JS required for filtering, sorting, or
       pagination. Responsive sidebar nav (desktop) / sheet drawer (mobile).
-- [ ] Phase 5 — Job details, save/apply actions
+- [x] **Phase 5 — Job details, save/apply actions.** Job details page
+      (`/jobs/[id]`) with full description (sanitized with DOMPurify — some
+      sources return real HTML), skills, salary, and a prominent "Open
+      Original Job" button. Save/Archive/Hide actions, an applied-status
+      pipeline (Waiting/Interview/Rejected/Offer), and separate notes for
+      the saved vs. applied contexts — all as plain forms calling Server
+      Actions, no client JS. New `/saved` (tabbed by status) and `/applied`
+      pages. Verified live with two separate accounts that RLS actually
+      isolates saved/applied data per user, not just that the UI hides it.
+- [ ] Phase 6 — Company pages
 - [ ] Phase 6 — Company pages
 - [ ] Phase 7 — Admin page
 - [ ] Phase 8 — Email digest
@@ -179,12 +188,19 @@ Phase 7 lands, the admin page).
 
 ## Vercel Cron
 
-`vercel.json` schedules `/api/cron/sync` every 6 hours (`0 */6 * * *`). Once
-`CRON_SECRET` is set in your Vercel project's environment variables, Vercel
-automatically sends it as `Authorization: Bearer $CRON_SECRET` on every
-invocation — no extra wiring needed after deploying. Cron Jobs are invoked
-with GET; the route also accepts POST for manual/local testing with the same
-header. (The email-digest cron entry gets added here in Phase 8.)
+`vercel.json` schedules `/api/cron/sync` once daily at 06:00 UTC
+(`0 6 * * *`). The original design called for every 6 hours, but Vercel's
+**Hobby plan only allows one cron invocation per day** — `0 */6 * * *` will
+fail to deploy on Hobby. If you upgrade to Pro, change the schedule back to
+`0 */6 * * *` for the original cadence. Either way, you can always trigger
+an extra sync anytime via `/api/admin/sync` (once the admin page lands in
+Phase 7) or by calling `/api/cron/sync` manually with the bearer header.
+
+Once `CRON_SECRET` is set in your Vercel project's environment variables,
+Vercel automatically sends it as `Authorization: Bearer $CRON_SECRET` on
+every invocation — no extra wiring needed after deploying. Cron Jobs are
+invoked with GET; the route also accepts POST for manual/local testing with
+the same header. (The email-digest cron entry gets added here in Phase 8.)
 
 ## Local development notes
 
